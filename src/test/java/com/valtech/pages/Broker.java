@@ -1,70 +1,114 @@
 package com.valtech.pages;
 
 import com.valtech.utils.Driver;
-import org.openqa.selenium.By;
-import org.openqa.selenium.Keys;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.interactions.Actions;
+import org.openqa.selenium.*;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
 
+import java.time.Duration;
 import java.util.List;
 
 public class Broker {
-
-    private String name;
-
-    public void setName(String name) {
-        this.name = name;
-    }
+    WebDriverWait wait = new WebDriverWait(Driver.get(), Duration.ofSeconds(4));
 
     public Broker() {
         PageFactory.initElements(Driver.get(), this);
     }
 
-    @FindBy(xpath = "//h6")
-    public List<WebElement> names;
+    private String contextName;
 
-    @FindBy(xpath = "//label[contains(text(), 'Key word')]/following-sibling::div/input")
+    @FindBy(xpath = "//h6")
+    public WebElement name;
+
+    @FindBy(xpath = "//input[@id='broker-keyword']")
     public WebElement keyWordInput;
 
-    public WebElement getKeyWordInput() {
-        return Driver.get().findElement(By.xpath("//label[contains(text(), 'Key word')]"));
-    }
+    @FindBy(xpath = "//button[contains(text(), 'Clear')]")
+    public WebElement clearButton;
 
-    public WebElement getBrokerName(){
-        return Driver.get().findElement(By.xpath("//div[contains(@class, 'MuiCard-root')]//h6[contains(text(),'"+name+"')]"));
-    }
+    @FindBy(xpath = "//a[contains(text(), 'properties')]")
+    public WebElement propertiesButton;
 
-    public WebElement getDetailsButtonByName(){
-        return Driver.get().findElement(By.xpath("//div[contains(@class, 'MuiCard-root')]//h6[contains(text(),'"+name+"')]/../../div/button"));
-    }
+    @FindBy(xpath = "//button[contains(text(), 'Details')]")
+    public WebElement detailsButton;
 
-    public WebElement getPropertiesByName(){
-        return Driver.get().findElement(By.xpath("//div[contains(@class, 'MuiCard-root')]//h6[contains(text(),'"+name+"')]/../following-sibling::a[contains(text(), properties)]"));
-    }
+    @FindBy(xpath = "//div[contains(@class, 'MuiCardContent-root')]//div/span")
+    public WebElement addressText;
 
-    public void clearInput() throws InterruptedException {
-        keyWordInput.clear();
-        Thread.sleep(1000);
-        Driver.get().findElement(By.xpath("//button[contains(text(), 'Clear')]")).click();
-        Thread.sleep(1000);
-    }
+    @FindBy(xpath = "//div[contains(@class, 'MuiCardContent-root')]//div[contains(@class,'MuiStack-root')]//a")
+    public List<WebElement> phoneNumbers;
 
-
-    public List<WebElement> getAllNames() throws InterruptedException {
-        List<WebElement> elements = names;
-        Actions actions = new Actions(Driver.get());
-
-        while (elements.size()< 134){
-
-            Thread.sleep(10);
-            actions.scrollByAmount(0, 100).perform();
-            elements = Driver.get().findElements(By.xpath("//h6"));
+    public int getPhoneNumberCount() {
+        try {
+            wait.until(ExpectedConditions.refreshed(ExpectedConditions.visibilityOfAllElements(phoneNumbers)));
+            return phoneNumbers.size();
+        }catch(Exception e) {
+            retryClick(detailsButton);
         }
+        return 0;
+    }
 
-        elements.forEach(c-> System.out.println(c.getText()));
-        return elements;
+    public String getAddress() {
+        try {
+            wait.until(ExpectedConditions.refreshed(ExpectedConditions.visibilityOf(addressText)));
+            return addressText.getText();
+        }catch (NoSuchElementException | TimeoutException | StaleElementReferenceException e){
+            retryClick(detailsButton);
+            wait.until(ExpectedConditions.refreshed(ExpectedConditions.visibilityOf(addressText)));
+            return addressText.getText();
+        }
+    }
+
+    public void isOnlyOne() {
+        wait.until(ExpectedConditions.numberOfElementsToBe(By.xpath("//h6"), 1));
+    }
+
+    public void setContextName(String contextName) {
+        this.contextName = contextName;
+    }
+
+    public void inputName(String name) {
+        wait.until(ExpectedConditions.refreshed(ExpectedConditions.visibilityOf(keyWordInput)));
+        wait.until(ExpectedConditions.elementToBeClickable(keyWordInput));
+        wait.until(ExpectedConditions.refreshed(ExpectedConditions.elementToBeClickable(keyWordInput)));
+        keyWordInput.sendKeys(name);
+    }
+
+    public void clickDetailsButton() {
+        wait.until(ExpectedConditions.visibilityOf(detailsButton));
+        wait.until(ExpectedConditions.refreshed(ExpectedConditions.elementToBeClickable(detailsButton)));
+        wait.until(ExpectedConditions.elementToBeClickable(detailsButton));
+        retryClick(detailsButton);
+    }
+
+    public boolean isProperitesVisible() {
+        try {
+            wait.until(ExpectedConditions.visibilityOf(propertiesButton));
+            return true;
+        } catch (NoSuchElementException | StaleElementReferenceException el) {
+            return false;
+        }
+    }
+
+    public void clearInput() {
+        wait.until(ExpectedConditions.refreshed(ExpectedConditions.elementToBeClickable(clearButton)));
+        clearButton.click();
+    }
+
+    private static void retryClick(WebElement element) {
+        int attempts = 0;
+        while (attempts < 5) {
+            try {
+                WebDriverWait wait = new WebDriverWait(Driver.get(), Duration.ofSeconds(4));
+                wait.until(ExpectedConditions.refreshed(ExpectedConditions.elementToBeClickable(element)));
+                element.click();
+                return;
+            } catch (StaleElementReferenceException e) {
+                attempts++;
+            }
+        }
     }
 }

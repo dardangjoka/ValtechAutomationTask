@@ -1,31 +1,29 @@
 package com.valtech.stepDef;
 
+import com.valtech.utils.ConfigReader;
 import com.valtech.utils.Driver;
-import io.cucumber.java.After;
-import io.cucumber.java.Before;
-import io.cucumber.java.Scenario;
-import org.openqa.selenium.OutputType;
-import org.openqa.selenium.TakesScreenshot;
+import org.openqa.selenium.By;
+import org.openqa.selenium.Cookie;
+import org.testng.annotations.AfterTest;
+import org.testng.annotations.BeforeTest;
 
 import java.util.concurrent.TimeUnit;
 
 public class Hooks {
 
-        @Before
-        public void setUp() {
-            Driver.get().manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
-            Driver.get().manage().window().maximize();
-        }
+    @BeforeTest
+    public void setUp() {
+        Driver.get().manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
+        Driver.get().manage().window().maximize();
+        Driver.get().get(ConfigReader.get("baseurl"));
+        Driver.get().findElement(By.xpath("//button[contains(text(), 'Understood')]")).click();
+        Driver.get().manage().addCookie(new Cookie("test_cookie", "CheckForPermission"));
+        //TODO read cookies from a file.
+    }
 
-        @After
-        public void tearDown(Scenario scenario) {
-            System.out.println("After hooks");
-
-            if (scenario.isFailed()) {
-                final byte[] screenshot = ((TakesScreenshot) Driver.get()).getScreenshotAs(OutputType.BYTES);
-                scenario.attach(screenshot, "image/png", scenario.getName());
-
-            }
-            Driver.closeDriver();
-        }
+    @AfterTest
+    public void tearDown() {
+        System.out.println("After hooks");
+        Driver.closeDriver();
+    }
 }
